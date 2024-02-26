@@ -2,43 +2,51 @@ import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 
 import { GptService } from './gpt.service';
-import { OrthographyDto, ProsConsDiscusserDto } from './dtos';
+import { OrthographyDto, ProsConsDiscusserDto, TranslateDto } from './dtos';
 
 @Controller('gpt')
 export class GptController {
   constructor(private readonly gptService: GptService) {}
 
-    @Post('orthography-check')
-    orthographyCheck(
-      @Body() orthographyDto: OrthographyDto,
-    ) {
-      return this.gptService.orthographyCheck(orthographyDto);
+  @Post('orthography-check')
+  orthographyCheck(
+    @Body() orthographyDto: OrthographyDto,
+  ) {
+    return this.gptService.orthographyCheck(orthographyDto);
+  }
+
+  @Post('pros-cons-discusser')
+  prosConsDicusser(
+    @Body() prosConsDiscusserDto: ProsConsDiscusserDto,
+  ) {
+    return this.gptService.prosConsDicusser(prosConsDiscusserDto);
+  }
+
+  @Post('pros-cons-discusser-stream')
+  async prosConsDicusserStream(
+    @Body() prosConsDiscusserDto: ProsConsDiscusserDto,
+    @Res() res: Response,
+  ) {
+    const stream = await this.gptService.prosConsDicusserStream(prosConsDiscusserDto);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.status(HttpStatus.OK);
+
+    for await(const chunk of stream) {
+      const streamPiece = chunk.choices[0].delta.content || '';
+      // console.log({streamPiece});
+      res.write(streamPiece);
     }
 
-    @Post('pros-cons-discusser')
-    prosConsDicusser(
-      @Body() prosConsDiscusserDto: ProsConsDiscusserDto,
-    ) {
-      return this.gptService.prosConsDicusser(prosConsDiscusserDto);
-    }
+    res.end();
 
-    @Post('pros-cons-discusser-stream')
-    async prosConsDicusserStream(
-      @Body() prosConsDiscusserDto: ProsConsDiscusserDto,
-      @Res() res: Response,
-    ) {
-      const stream = await this.gptService.prosConsDicusserStream(prosConsDiscusserDto);
+  }
 
-      res.setHeader('Content-Type', 'application/json');
-      res.status(HttpStatus.OK);
 
-      for await(const chunk of stream) {
-        const streamPiece = chunk.choices[0].delta.content || '';
-        console.log({streamPiece});
-        res.write(streamPiece);
-      }
-
-      res.end();
-
-    }
+  @Post('translate')
+  translateText(
+    @Body() translateDto: TranslateDto,
+  ) {
+    return this.gptService.translateText(translateDto);
+  }
 }
